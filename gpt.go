@@ -13,6 +13,7 @@ type gpt struct {
 	browserContextPath string
 	browser            playwright.Browser
 	page playwright.Page
+	user Session
 }
 
 
@@ -106,7 +107,7 @@ func (g *gpt) Login(username, password string) error {
 		return err
 	}
 	if needLogin {
-		logger.Debug("User needs to login")
+		logger.Debug("Session needs to login")
 		err := g.page.Click(loginButtonSelector)
 		if err != nil {
 			logger.Error("Error while clicking on login button selector")
@@ -139,7 +140,23 @@ func (g *gpt) Login(username, password string) error {
 		}
 		g.saveBrowserContexts()
 	}
-	return g.passPopupDialog()
+	err = g.passPopupDialog()
+	if err != nil {
+		return err
+	}
+	cookies, err := g.page.Context().Cookies(baseURL)
+	if err != nil {
+		return err
+	}
+	logger.Debug("Number of cookies ", zap.Int("number-of-cookies", len(cookies)))
+	g.user.Cookies = playwrightCookiesToHttpCookies(cookies)
+	// TODO: Do not update the session now. Put in a variable then get the session details and create the user at once
+	return nil
+}
+
+//Session returns the information about the current session
+func (g *gpt) Session() Session {
+	return g.user
 }
 
 //Ask let you ask a new question with the given Version
