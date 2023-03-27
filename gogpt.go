@@ -22,6 +22,7 @@ type GoGPT interface {
 	History()
 	OpenFromHistory(index uint)
 	NewChat()
+	Session() Session
 	Debug()
 }
 
@@ -69,8 +70,10 @@ func New(browserContextPath string, headless, debug bool) (GoGPT,error) {
 
 	return &gpt{
 		browserContextPath: browserContextPath,
-		browser: browser,
-		page: page,
+		browser:            browser,
+		page:               page,
+		// TODO: User should be nil at the beginning
+		user:               Session{},
 	}, nil
 }
 
