@@ -14,12 +14,8 @@ type gpt struct {
 	GoGPT
 	browserContextPath string
 	browser            playwright.Browser
-	page    playwright.Page
-	session *Session
-	httpClient *http.Client
-	cookieJar *autoFillingCookieJar
-	username, password *string
-	popupPassed bool
+	page playwright.Page
+	user Session
 }
 
 
@@ -116,20 +112,57 @@ func (g *gpt) Login(username, password string) error {
 	if err != nil {
 		return err
 	}
-	err = g.initCookieJarAndHttpClient()
+	if needLogin {
+		logger.Debug("Session needs to login")
+		err := g.page.Click(loginButtonSelector)
+		if err != nil {
+			logger.Error("Error while clicking on login button selector")
+			return err
+		}
+		err = g.page.Fill(usernameInputSelector, username)
+		if err != nil {
+			logger.Error("Error while filling username input")
+			return err
+		}
+		err = g.page.Click(continueButtonSelector)
+		if err != nil {
+			logger.Error("Error while clicking on continue button")
+			return err
+		}
+		err = g.page.Fill(passwordInputSelector, password)
+		if err != nil {
+			logger.Error("Error while filling the password input")
+			return err
+		}
+		err = g.page.Click(continueButtonSelector)
+		if err != nil {
+			logger.Error("Error while clicking on continue button")
+			return err
+		}
+		err = g.page.WaitForURL(fmt.Sprintf("%s/chat", baseURL))
+		if err != nil {
+			logger.Error("Error while waiting the url changes to logged in URL")
+			return err
+		}
+		g.saveBrowserContexts()
+	}
+	err = g.passPopupDialog()
 	if err != nil {
 		return err
 	}
-	err = g.initSession()
+	cookies, err := g.page.Context().Cookies(baseURL)
 	if err != nil {
 		return err
 	}
+	logger.Debug("Number of cookies ", zap.Int("number-of-cookies", len(cookies)))
+	g.user.Cookies = playwrightCookiesToHttpCookies(cookies)
+	// TODO: Do not update the session now. Put in a variable then get the session details and create the user at once
 	return nil
 }
 
 //Session returns the information about the current session
 func (g *gpt) Session() Session {
-	return *g.session
+	return g.user
 }
 
 //Ask let you ask a new question with the given Version
