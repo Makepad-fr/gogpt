@@ -106,43 +106,9 @@ func (g *gpt) userNeedsToLogin() (bool, error) {
 
 //Login let you log in to your ChatGPT account using given username and password
 func (g *gpt) Login(username, password string) error {
-	needLogin, err := g.userNeedsToLogin()
+	err := g.internalLogin(username, password)
 	if err != nil {
 		return err
-	}
-	if needLogin {
-		logger.Debug("Session needs to login")
-		err := g.page.Click(loginButtonSelector)
-		if err != nil {
-			logger.Error("Error while clicking on login button selector")
-			return err
-		}
-		err = g.page.Fill(usernameInputSelector, username)
-		if err != nil {
-			logger.Error("Error while filling username input")
-			return err
-		}
-		err = g.page.Click(continueButtonSelector)
-		if err != nil {
-			logger.Error("Error while clicking on continue button")
-			return err
-		}
-		err = g.page.Fill(passwordInputSelector, password)
-		if err != nil {
-			logger.Error("Error while filling the password input")
-			return err
-		}
-		err = g.page.Click(continueButtonSelector)
-		if err != nil {
-			logger.Error("Error while clicking on continue button")
-			return err
-		}
-		err = g.page.WaitForURL(fmt.Sprintf("%s/chat", baseURL))
-		if err != nil {
-			logger.Error("Error while waiting the url changes to logged in URL")
-			return err
-		}
-		g.saveBrowserContexts()
 	}
 	err = g.passPopupDialog()
 	if err != nil {
@@ -258,4 +224,56 @@ func (g *gpt) passPopupDialog() error {
 	return g.saveBrowserContexts()
 }
 
+//internalLogin just handles the login with the given username and password without any side effects
+func (g *gpt) internalLogin(username, password string) error {
+	needLogin, err := g.userNeedsToLogin()
+	if err != nil {
+		return err
+	}
+	if needLogin {
+		logger.Debug("Session needs to login")
+		err := g.page.Click(loginButtonSelector)
+		if err != nil {
+			logger.Error("Error while clicking on login button selector")
+			return err
+		}
+		err = g.page.Fill(usernameInputSelector, username)
+		if err != nil {
+			logger.Error("Error while filling username input")
+			return err
+		}
+		err = g.page.Click(continueButtonSelector)
+		if err != nil {
+			logger.Error("Error while clicking on continue button")
+			return err
+		}
+		err = g.page.Fill(passwordInputSelector, password)
+		if err != nil {
+			logger.Error("Error while filling the password input")
+			return err
+		}
+		err = g.page.Click(continueButtonSelector)
+		if err != nil {
+			logger.Error("Error while clicking on continue button")
+			return err
+		}
+		err = g.page.WaitForURL(fmt.Sprintf("%s/chat", baseURL))
+		if err != nil {
+			logger.Error("Error while waiting the u changes to logged in URL")
+			return err
+		}
+		err = g.saveBrowserContexts()
+		if err != nil {
+			return err
+		}
+		// Login successful save login information
+		g.username = &username
+		g.password = &password
+	}
+	err = g.passPopupDialog()
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
