@@ -1,10 +1,12 @@
 package gogpt
 
 import (
+	"errors"
 	"fmt"
 	"github.com/playwright-community/playwright-go"
 	"go.uber.org/zap"
 	"log"
+	"net/http"
 	"strings"
 )
 
@@ -12,8 +14,11 @@ type gpt struct {
 	GoGPT
 	browserContextPath string
 	browser            playwright.Browser
-	page playwright.Page
-	user Session
+	page    playwright.Page
+	session *Session
+	httpClient *http.Client
+	cookieJar *autoFillingCookieJar
+	username, password *string
 }
 
 
@@ -110,23 +115,21 @@ func (g *gpt) Login(username, password string) error {
 	if err != nil {
 		return err
 	}
-	err = g.passPopupDialog()
+	err = g.initCookieJarAndHttpClient()
 	if err != nil {
 		return err
 	}
-	cookies, err := g.page.Context().Cookies(baseURL)
+	err = g.loadSessionDetails()
 	if err != nil {
 		return err
 	}
-	logger.Debug("Number of cookies ", zap.Int("number-of-cookies", len(cookies)))
-	g.user.Cookies = playwrightCookiesToHttpCookies(cookies)
-	// TODO: Do not update the session now. Put in a variable then get the session details and create the user at once
+	// TODO: Do not update the session now. Put in a variable then get the session details and create the session at once
 	return nil
 }
 
 //Session returns the information about the current session
 func (g *gpt) Session() Session {
-	return g.user
+	return *g.session
 }
 
 //Ask let you ask a new question with the given Version
@@ -222,6 +225,42 @@ func (g *gpt) passPopupDialog() error {
 	logger.Debug("Updating the browser context after popup")
 	// Update the browser context once the dialog is closed
 	return g.saveBrowserContexts()
+}
+
+//getUserCookiesSupplier creates a httpCookieSupplier for the given url string passed in parameters
+func (g *gpt) getUserCookiesSupplier(u string) httpCookieSupplier {
+	return func() ([]*http.Cookie, error) {
+		loginNeeded, err := g.userNeedsToLogin()
+		if err != nil {
+			return nil, err
+		}
+		if loginNeeded {
+			// If user needs to log in
+			// Check if both username and password are provided
+			if g.username == nil || g.password == nil {
+				return nil, errors.New("can generate cookies as the username or password is not provided and user needs to be logged in")
+			}
+			err = g.internalLogin(*g.username, *g.password)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			// If user does not need to log in pass te pop-up dialog if applicable
+			err = g.passPopupDialog()
+			if err != nil {
+				return nil, err
+			}
+		}
+		// Get cookies for the given url string
+		cookies, err := g.page.Context().Cookies(u)
+		if err != nil {
+			return nil, err
+		}
+		// Convert playwright.BrowserContextCookiesResult to http.Cookie
+		httpCookies := playwrightCookiesToHttpCookies(cookies)
+		// Return them
+		return httpCookies, nil
+	}
 }
 
 //internalLogin just handles the login with the given username and password without any side effects
