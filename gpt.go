@@ -19,6 +19,7 @@ type gpt struct {
 	httpClient *http.Client
 	cookieJar *autoFillingCookieJar
 	username, password *string
+	popupPassed bool
 }
 
 
