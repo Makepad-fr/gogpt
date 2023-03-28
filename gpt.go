@@ -76,6 +76,10 @@ func (g *gpt) solveChallenge(challengeElementHandle playwright.ElementHandle) er
 //userNeedsToLogin returns true if the user needs to be logged in by navigating to the default url of ChatGPT
 func (g *gpt) userNeedsToLogin() (bool, error) {
 	err := g.navigate()
+	if g.page.URL() == fmt.Sprintf("%s/chat", baseURL) {
+		logger.Debug("Already on the application page by the URL. No need to login")
+		return false, nil
+	}
 	if err != nil {
 		return true, err
 	}
