@@ -72,12 +72,11 @@ func New(browserContextPath string, headless, debug bool) (GoGPT,error) {
 		browserContextPath: browserContextPath,
 		browser:            browser,
 		page:               page,
-		// TODO: User should be nil at the beginning
-		user:               Session{},
+		session:            nil,
 	}, nil
 }
 
-// DumpCookie lets user login to the ChatGPT with headless mode disabled and dumps the browser context to the given browserContextPath string passed in parameters
+// DumpCookie lets session login to the ChatGPT with headless mode disabled and dumps the browser context to the given browserContextPath string passed in parameters
 func DumpCookie(browserContextPath string) error {
 	// TODO: Complete function definition
 	return nil
