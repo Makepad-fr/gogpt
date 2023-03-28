@@ -72,8 +72,7 @@ func New(browserContextPath string, headless, debug bool) (GoGPT,error) {
 		browserContextPath: browserContextPath,
 		browser:            browser,
 		page:               page,
-		// TODO: User should be nil at the beginning
-		user:               Session{},
+		session:            nil,
 	}, nil
 }
 
