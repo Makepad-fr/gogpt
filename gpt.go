@@ -112,40 +112,6 @@ func (g *gpt) Login(username, password string) error {
 	if err != nil {
 		return err
 	}
-	if needLogin {
-		logger.Debug("Session needs to login")
-		err := g.page.Click(loginButtonSelector)
-		if err != nil {
-			logger.Error("Error while clicking on login button selector")
-			return err
-		}
-		err = g.page.Fill(usernameInputSelector, username)
-		if err != nil {
-			logger.Error("Error while filling username input")
-			return err
-		}
-		err = g.page.Click(continueButtonSelector)
-		if err != nil {
-			logger.Error("Error while clicking on continue button")
-			return err
-		}
-		err = g.page.Fill(passwordInputSelector, password)
-		if err != nil {
-			logger.Error("Error while filling the password input")
-			return err
-		}
-		err = g.page.Click(continueButtonSelector)
-		if err != nil {
-			logger.Error("Error while clicking on continue button")
-			return err
-		}
-		err = g.page.WaitForURL(fmt.Sprintf("%s/chat", baseURL))
-		if err != nil {
-			logger.Error("Error while waiting the url changes to logged in URL")
-			return err
-		}
-		g.saveBrowserContexts()
-	}
 	err = g.passPopupDialog()
 	if err != nil {
 		return err
@@ -264,42 +230,6 @@ func (g *gpt) passPopupDialog() error {
 	logger.Debug("Updating the browser context after popup")
 	// Update the browser context once the dialog is closed
 	return g.saveBrowserContexts()
-}
-
-//getUserCookiesSupplier creates a httpCookieSupplier for the given url string passed in parameters
-func (g *gpt) getUserCookiesSupplier(u string) httpCookieSupplier {
-	return func() ([]*http.Cookie, error) {
-		loginNeeded, err := g.userNeedsToLogin()
-		if err != nil {
-			return nil, err
-		}
-		if loginNeeded {
-			// If user needs to log in
-			// Check if both username and password are provided
-			if g.username == nil || g.password == nil {
-				return nil, errors.New("can generate cookies as the username or password is not provided and user needs to be logged in")
-			}
-			err = g.internalLogin(*g.username, *g.password)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			// If user does not need to log in pass te pop-up dialog if applicable
-			err = g.passPopupDialog()
-			if err != nil {
-				return nil, err
-			}
-		}
-		// Get cookies for the given url string
-		cookies, err := g.page.Context().Cookies(u)
-		if err != nil {
-			return nil, err
-		}
-		// Convert playwright.BrowserContextCookiesResult to http.Cookie
-		httpCookies := playwrightCookiesToHttpCookies(cookies)
-		// Return them
-		return httpCookies, nil
-	}
 }
 
 //internalLogin just handles the login with the given username and password without any side effects
