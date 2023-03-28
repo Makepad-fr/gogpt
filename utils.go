@@ -16,6 +16,8 @@ func randomTimeOut() float64 {
 	return float64(r.Intn(10000) + 1000)
 }
 
+
+//playwrightSameSiteAttributeToHttpSameSite converts a *playwright.SameSiteAttribute to a http.SameSite
 func playwrightSameSiteAttributeToHttpSameSite(attribute *playwright.SameSiteAttribute) http.SameSite {
 	switch attribute {
 	case playwright.SameSiteAttributeStrict: return http.SameSiteStrictMode
@@ -25,6 +27,7 @@ func playwrightSameSiteAttributeToHttpSameSite(attribute *playwright.SameSiteAtt
 	}
 }
 
+//playwrightToHttpCookie converts the given *playwright.BrowserContextCookiesResult to a *http.Cookie
 func playwrightToHttpCookie (playwrightCookie *playwright.BrowserContextCookiesResult) *http.Cookie {
 	return &http.Cookie{
 		Name:       playwrightCookie.Name,
@@ -38,6 +41,7 @@ func playwrightToHttpCookie (playwrightCookie *playwright.BrowserContextCookiesR
 	}
 }
 
+//playwrightCookiesToHttpCookies converts the given slice of *playwright.BrowserContextCookiesResult to a slice of *http.Cookie
 func playwrightCookiesToHttpCookies(cookies []*playwright.BrowserContextCookiesResult) []*http.Cookie {
 	var result []*http.Cookie = make([]*http.Cookie, len(cookies), len(cookies))
 	for i,cookie := range cookies {
