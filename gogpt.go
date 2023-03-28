@@ -73,6 +73,7 @@ func New(browserContextPath string, headless, debug bool) (GoGPT,error) {
 		browser:            browser,
 		page:               page,
 		session:            nil,
+		popupPassed: false,
 	}, nil
 }
 
