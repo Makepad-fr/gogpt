@@ -19,6 +19,7 @@ type gpt struct {
 	httpClient *http.Client
 	cookieJar *autoFillingCookieJar
 	username, password *string
+	popupPassed bool
 }
 
 
@@ -189,9 +190,14 @@ func (g *gpt) getPopupDialog() playwright.ElementHandle{
 //passPopupDialog closes the pop-up dialog if there's any. To avoid that it happens again and again it updates the
 //browserContext identified by browserContextPath. If something getc
 func (g *gpt) passPopupDialog() error {
+	if g.popupPassed {
+		logger.Debug("Pop-up already passed no need to repass")
+		return nil
+	}
 	popupDialogElementHandler := g.getPopupDialog()
 	if popupDialogElementHandler == nil {
 		logger.Debug("There's no popup to pass")
+		g.popupPassed = true
 		// If there's nothing to pass, just return
 		return nil
 	}
@@ -217,6 +223,7 @@ func (g *gpt) passPopupDialog() error {
 		}
 		if last {
 			logger.Debug("Dialog passed")
+			g.popupPassed = true
 			break
 		}
 		logger.Debug("Updating popup element handler")
