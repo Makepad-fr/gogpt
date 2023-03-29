@@ -120,11 +120,10 @@ func (g *gpt) Login(username, password string) error {
 	if err != nil {
 		return err
 	}
-	err = g.loadSessionDetails()
+	err = g.initSession()
 	if err != nil {
 		return err
 	}
-	// TODO: Do not update the session now. Put in a variable then get the session details and create the session at once
 	return nil
 }
 
