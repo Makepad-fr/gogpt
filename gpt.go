@@ -6,8 +6,10 @@ import (
 	"github.com/playwright-community/playwright-go"
 	"go.uber.org/zap"
 	"log"
+	"math"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type gpt struct {
@@ -97,6 +99,10 @@ func (g *gpt) userNeedsToLogin() (bool, error) {
 			logger.Error("Error while solving challenge")
 			return true, err
 		}
+		err = g.saveBrowserContexts()
+		if err != nil {
+			return true, err
+		}
 	}
 	_, err = g.page.WaitForSelector(loginPageTextSelector)
 	if err != nil {
@@ -136,12 +142,42 @@ func (*gpt) Ask(question string, version Version) {
 
 // History returns the history of conversations as a slice of Conversation
 func (g *gpt) History() ([]Conversation, error) {
-	response, err := g.getConversationHistory()
+	const limit uint = 100
+	logger.Debug("Make a first request to get the total number of conversations")
+	response, err := g.getConversationHistory(0, limit)
 	if err != nil {
 		logger.Error("Error while getting user's conversations")
 		return nil, err
 	}
-	return response.Items, nil
+	set := newIdBasedSet[Conversation](response.Total)
+	set.addAll(response.Items)
+	logger.Debug("Items added ", zap.Int("number-of-items", set.size()))
+	var attempts = 0
+	const maxAttempts = 5
+	for set.size() < response.Total && attempts < maxAttempts {
+		// Wait for a random timeout
+		randomTimeOut := randomTimeOut()
+		logger.Debug("Waiting for ", zap.Float64("timeout", randomTimeOut))
+		time.Sleep(time.Duration(randomTimeOut) * time.Millisecond)
+		response, err = g.getConversationHistory(uint(set.size()), uint(math.Min(float64(limit), float64(response.Total-set.size()))))
+		before := set.size()
+		if err != nil {
+			return nil, err
+		}
+		set.addAll(response.Items)
+		logger.Debug("Items added ", zap.Int("number-of-items", set.size()))
+		if before == set.size() {
+			logger.Warn("The call was not bring any result", zap.Int("size", set.size()), zap.Int("attempts-count", attempts))
+			/* For some reason the total number does not always match with the reel number of conversations.
+			While this solution needs to be investigated more carefully, for now we are counting a number of unsuccessful
+			attempts and stop on maxAttempts number of attempts
+			*/
+			attempts++
+		}
+
+	}
+	// Return the created items
+	return set.content, nil
 }
 
 // OpenFromHistory let you select a chat from the history with the given index
