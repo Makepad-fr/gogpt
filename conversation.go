@@ -9,8 +9,13 @@ type ConversationsResponse struct {
 }
 
 type Conversation struct {
+	idBasedSetItem
 	ID         string `json:"id"`
 	Title      string `json:"title"`
 	CreateTime string `json:"create_time"`
 	UpdateTime string `json:"update_time"`
+}
+
+func (c Conversation) getId() string {
+	return c.ID
 }

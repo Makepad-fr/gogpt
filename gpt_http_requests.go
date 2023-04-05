@@ -108,9 +108,8 @@ func (g *gpt) createRequest(method string, endpoint string, body io.Reader) (*ht
 	return req, nil
 }
 
-func (g *gpt) getConversationHistory() (*ConversationsResponse, error) {
-	// TODO: Implement pagination
-	req, err := g.createRequest("GET", "backend-api/conversations?offset=0&limit=20", nil)
+func (g *gpt) getConversationHistory(offset, limit uint) (*ConversationsResponse, error) {
+	req, err := g.createRequest("GET", fmt.Sprintf("backend-api/conversations?offset=%d&limit=%d", offset, limit), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -119,10 +118,14 @@ func (g *gpt) getConversationHistory() (*ConversationsResponse, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
 	body, err := io.ReadAll(resp.Body)
+
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("error while fetching conversation history %s. Response status code %d", body, resp.StatusCode)
 	}
 	var response ConversationsResponse
 	if err := json.Unmarshal(body, &response); err != nil {
