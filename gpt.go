@@ -14,20 +14,19 @@ type gpt struct {
 	GoGPT
 	browserContextPath string
 	browser            playwright.Browser
-	page    playwright.Page
-	session *Session
-	httpClient *http.Client
-	cookieJar *autoFillingCookieJar
+	page               playwright.Page
+	session            *Session
+	httpClient         *http.Client
+	cookieJar          *autoFillingCookieJar
 	username, password *string
-	popupPassed bool
+	popupPassed        bool
 }
 
-
-//getChallenge returns  a playwright.ElementHandle related to the challenge and an error if there's an error returned by navigate
+// getChallenge returns  a playwright.ElementHandle related to the challenge and an error if there's an error returned by navigate
 func (g *gpt) getChallenge() (playwright.ElementHandle, error) {
 	err := g.navigate()
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	selector, err := g.page.WaitForSelector(challengeDivSelector)
 	if err != nil {
@@ -35,7 +34,6 @@ func (g *gpt) getChallenge() (playwright.ElementHandle, error) {
 	}
 	return selector, nil
 }
-
 
 // navigate goes to the baseURL
 func (g *gpt) navigate() error {
@@ -51,7 +49,6 @@ func (g *gpt) navigate() error {
 	}
 	return nil
 }
-
 
 // solveChallenge solves the challenge in the login screen
 func (g *gpt) solveChallenge(challengeElementHandle playwright.ElementHandle) error {
@@ -79,7 +76,7 @@ func (g *gpt) solveChallenge(challengeElementHandle playwright.ElementHandle) er
 	return nil
 }
 
-//userNeedsToLogin returns true if the user needs to be logged in by navigating to the default url of ChatGPT
+// userNeedsToLogin returns true if the user needs to be logged in by navigating to the default url of ChatGPT
 func (g *gpt) userNeedsToLogin() (bool, error) {
 	err := g.navigate()
 	if g.page.URL() == fmt.Sprintf("%s/chat", baseURL) {
@@ -110,7 +107,7 @@ func (g *gpt) userNeedsToLogin() (bool, error) {
 	return true, nil
 }
 
-//Login let you log in to your ChatGPT account using given username and password
+// Login let you log in to your ChatGPT account using given username and password
 func (g *gpt) Login(username, password string) error {
 	err := g.internalLogin(username, password)
 	if err != nil {
@@ -127,39 +124,44 @@ func (g *gpt) Login(username, password string) error {
 	return nil
 }
 
-//Session returns the information about the current session
+// Session returns the information about the current session
 func (g *gpt) Session() Session {
 	return *g.session
 }
 
-//Ask let you ask a new question with the given Version
+// Ask let you ask a new question with the given Version
 func (*gpt) Ask(question string, version Version) {
 
 }
 
-//History returns the history of conversations
-func (*gpt) History() {
-
+// History returns the history of conversations as a slice of Conversation
+func (g *gpt) History() ([]Conversation, error) {
+	response, err := g.getConversationHistory()
+	if err != nil {
+		logger.Error("Error while getting user's conversations")
+		return nil, err
+	}
+	return response.Items, nil
 }
 
-//OpenFromHistory let you select a chat from the history with the given index
+// OpenFromHistory let you select a chat from the history with the given index
 func (*gpt) OpenFromHistory(index uint) {
 
 }
 
-//NewChat creates a new chat
+// NewChat creates a new chat
 func (*gpt) NewChat() {
 
 }
 
-//Debug function is only used for debugging purposes, it disables the default behavior of playwright which is closing
-//browser and page once the execution is done
+// Debug function is only used for debugging purposes, it disables the default behavior of playwright which is closing
+// browser and page once the execution is done
 func (g *gpt) Debug() {
 	g.page.WaitForTimeout(100000000000)
 }
 
-//saveBrowserContexts saves the browser contexts of the *gpt to the browserContextPath
-func (g *gpt) saveBrowserContexts() error{
+// saveBrowserContexts saves the browser contexts of the *gpt to the browserContextPath
+func (g *gpt) saveBrowserContexts() error {
 	contexts := g.browser.Contexts()
 	if len(contexts) > 1 {
 		logger.Fatal("Multiple contexts contexts detected", zap.Int("length", len(contexts)))
@@ -174,9 +176,9 @@ func (g *gpt) saveBrowserContexts() error{
 	return nil
 }
 
-//getPopupDialog returns the playwright.ElementHandle related to the popupDialog selected by popupDialogSelector
-//if there's no pop-up dialog it returns nil
-func (g *gpt) getPopupDialog() playwright.ElementHandle{
+// getPopupDialog returns the playwright.ElementHandle related to the popupDialog selected by popupDialogSelector
+// if there's no pop-up dialog it returns nil
+func (g *gpt) getPopupDialog() playwright.ElementHandle {
 	elementHandle, err := g.page.WaitForSelector(popupDialogSelector)
 	if err != nil {
 		logger.Debug("Popup selector does not exists")
@@ -186,8 +188,8 @@ func (g *gpt) getPopupDialog() playwright.ElementHandle{
 	return elementHandle
 }
 
-//passPopupDialog closes the pop-up dialog if there's any. To avoid that it happens again and again it updates the
-//browserContext identified by browserContextPath. If something getc
+// passPopupDialog closes the pop-up dialog if there's any. To avoid that it happens again and again it updates the
+// browserContext identified by browserContextPath. If something getc
 func (g *gpt) passPopupDialog() error {
 	if g.popupPassed {
 		logger.Debug("Pop-up already passed no need to repass")
@@ -233,7 +235,7 @@ func (g *gpt) passPopupDialog() error {
 	return g.saveBrowserContexts()
 }
 
-//getUserCookiesSupplier creates a httpCookieSupplier for the given url string passed in parameters
+// getUserCookiesSupplier creates a httpCookieSupplier for the given url string passed in parameters
 func (g *gpt) getUserCookiesSupplier(u string) httpCookieSupplier {
 	return func() ([]*http.Cookie, error) {
 		loginNeeded, err := g.userNeedsToLogin()
@@ -269,7 +271,7 @@ func (g *gpt) getUserCookiesSupplier(u string) httpCookieSupplier {
 	}
 }
 
-//internalLogin just handles the login with the given username and password without any side effects
+// internalLogin just handles the login with the given username and password without any side effects
 func (g *gpt) internalLogin(username, password string) error {
 	needLogin, err := g.userNeedsToLogin()
 	if err != nil {
@@ -321,4 +323,3 @@ func (g *gpt) internalLogin(username, password string) error {
 	}
 	return nil
 }
-

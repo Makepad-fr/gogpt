@@ -19,17 +19,14 @@ func init() {
 type GoGPT interface {
 	Login(username, password string) error
 	Ask(question string, version Version)
-	History()
+	History() error
 	OpenFromHistory(index uint)
 	NewChat()
 	Session() Session
 	Debug()
 }
 
-
-
-
-func New(browserContextPath string, headless, debug bool) (GoGPT,error) {
+func New(browserContextPath string, headless, debug bool) (GoGPT, error) {
 	var loadFromBrowserContext bool
 	s, err := os.Stat(browserContextPath)
 	if err != nil {
@@ -37,7 +34,7 @@ func New(browserContextPath string, headless, debug bool) (GoGPT,error) {
 	} else {
 		loadFromBrowserContext = !s.IsDir()
 	}
-	pw,err := playwright.Run()
+	pw, err := playwright.Run()
 	if err != nil {
 		return nil, err
 	}
@@ -56,24 +53,23 @@ func New(browserContextPath string, headless, debug bool) (GoGPT,error) {
 		return nil, err
 	}
 	logger = l
-	browser,err := pw.Firefox.Launch(playwright.BrowserTypeLaunchOptions{Headless: &headless})
+	browser, err := pw.Firefox.Launch(playwright.BrowserTypeLaunchOptions{Headless: &headless})
 	if err != nil {
 		return nil, err
 	}
-	page,err := browser.NewPage(playwright.BrowserNewContextOptions{
-		StorageStatePath:  browserContextPathPtr,
+	page, err := browser.NewPage(playwright.BrowserNewContextOptions{
+		StorageStatePath: browserContextPathPtr,
 	})
 	if err != nil {
 		return nil, err
 	}
-
 
 	return &gpt{
 		browserContextPath: browserContextPath,
 		browser:            browser,
 		page:               page,
 		session:            nil,
-		popupPassed: false,
+		popupPassed:        false,
 	}, nil
 }
 
