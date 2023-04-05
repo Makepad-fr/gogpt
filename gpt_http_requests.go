@@ -1,12 +1,14 @@
 package gogpt
 
 import (
+	"encoding/json"
+	"fmt"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
 )
 
-//initCookieJarAndHttpClient initialises the autoFillingCookieJar and http.Client instances inside the current *gpt instance
+// initCookieJarAndHttpClient initialises the autoFillingCookieJar and http.Client instances inside the current *gpt instance
 func (g *gpt) initCookieJarAndHttpClient() error {
 	if g.cookieJar == nil {
 		cookieJar, err := createNewAutoFillingCookieJar(baseURL, g.getUserCookiesSupplier(baseURL))
@@ -27,9 +29,9 @@ func (g *gpt) initCookieJarAndHttpClient() error {
 	return nil
 }
 
-//initSession initializes the session of the current gpt instance.
-//It returns an error if something goes wrong while unmarshalling the api response
-func (g *gpt) initSession() error{
+// initSession initializes the session of the current gpt instance.
+// It returns an error if something goes wrong while unmarshalling the api response
+func (g *gpt) initSession() error {
 	err := g.cookieJar.setExpiredCookies()
 	if err != nil {
 		return err
@@ -56,9 +58,8 @@ func (g *gpt) initSession() error{
 	return nil
 }
 
-
-//refreshSession verifies if there's a session exists. If there's no session exists, creates one using initSession
-//if there's an existing session verifies if the session is expired using isExpired function. If the session is expired
+// refreshSession verifies if there's a session exists. If there's no session exists, creates one using initSession
+// if there's an existing session verifies if the session is expired using isExpired function. If the session is expired
 // recreates the session using initSession
 func (g *gpt) refreshSession() error {
 	if g.session == nil {
@@ -75,8 +76,8 @@ func (g *gpt) refreshSession() error {
 	return nil
 }
 
-//prepareRequest prepares the cookies and the user session to use in each http request. This function should be called
-//before each http request to ensure that the request will not be blocked
+// prepareRequest prepares the cookies and the user session to use in each http request. This function should be called
+// before each http request to ensure that the request will not be blocked
 func (g *gpt) prepareRequest() error {
 	err := g.initCookieJarAndHttpClient()
 	if err != nil {
@@ -91,4 +92,42 @@ func (g *gpt) prepareRequest() error {
 		return err
 	}
 	return nil
+}
+
+func (g *gpt) createRequest(method string, endpoint string, body io.Reader) (*http.Request, error) {
+	err := g.prepareRequest()
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(method, fmt.Sprintf("%s/%s", baseURL, endpoint), body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", g.session.AccessToken))
+	req.Header.Set("content-type", "/application/json")
+	return req, nil
+}
+
+func (g *gpt) getConversationHistory() (*ConversationsResponse, error) {
+	// TODO: Implement pagination
+	req, err := g.createRequest("GET", "backend-api/conversations?offset=0&limit=20", nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := g.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var response ConversationsResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, err
+	}
+
+	return &response, nil
 }
