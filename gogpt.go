@@ -20,6 +20,7 @@ type GoGPT interface {
 	Login(username, password string) error
 	Ask(question string, version Version)
 	History() ([]Conversation, error)
+	AccountInfo() UserAccountInfo
 	OpenFromHistory(index uint)
 	NewChat()
 	Session() Session
