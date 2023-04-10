@@ -41,6 +41,16 @@ func (s *idBasedSet[T]) contains(itemToVerify T) bool {
 	return false
 }
 
+// find finds the element which has the given id in the current idBasedSet
+func (s *idBasedSet[T]) find(id string) *T {
+	for _, item := range s.content {
+		if item.getId() == id {
+			return &item
+		}
+	}
+	return nil
+}
+
 // size returns the length of the idBasedSet instance
 func (s *idBasedSet[T]) size() int {
 	return len(s.content)

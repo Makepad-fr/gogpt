@@ -21,7 +21,7 @@ type GoGPT interface {
 	Ask(question string, version Version)
 	History() ([]ConversationHistoryItem, error)
 	AccountInfo() UserAccountInfo
-	OpenFromHistory(index uint)
+	LoadConversation(uuid string) (*Conversation, error)
 	NewChat()
 	Session() Session
 	Debug()

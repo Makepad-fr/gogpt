@@ -202,8 +202,22 @@ func (g *gpt) History() ([]ConversationHistoryItem, error) {
 	return g.conversationHistory.content, nil
 }
 
-// OpenFromHistory let you select a chat from the history with the given index
-func (*gpt) OpenFromHistory(index uint) {
+// LoadConversation loads a conversation from the chat history using the conversation uuid
+func (g *gpt) LoadConversation(uuid string) (*Conversation, error) {
+	element := g.conversationHistory.find(uuid)
+	if element == nil {
+		logger.Warn("Can not find conversation, we'll try to reload the conversation history and re-try", zap.String("conversation-uuid", uuid))
+		err := g.updateConversationHistory(5, 100)
+		if err != nil {
+			return nil, err
+		}
+		// once the conversation history is loaded, re-try to find the related element
+		element = g.conversationHistory.find(uuid)
+		if element == nil {
+			return nil, fmt.Errorf("can not find conversation with uuid %s", uuid)
+		}
+	}
+	return g.getConversation(uuid)
 
 }
 
