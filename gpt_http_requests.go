@@ -146,3 +146,7 @@ func (g *gpt) getConversationHistory(offset, limit uint) (*ConversationHistoryRe
 func (g *gpt) getAccountInfo() (*UserAccountInfo, error) {
 	return runAPIRequest[UserAccountInfo](g, "GET", "accounts/check", nil)
 }
+
+func (g *gpt) getConversation(uuid string) (*Conversation, error) {
+	return runAPIRequest[Conversation](g, "GET", fmt.Sprintf("conversation/%s", uuid), nil)
+}
