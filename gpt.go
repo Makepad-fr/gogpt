@@ -20,6 +20,7 @@ type gpt struct {
 	session            *Session
 	httpClient         *http.Client
 	cookieJar          *autoFillingCookieJar
+	accountInfo        *UserAccountInfo
 	username, password *string
 	popupPassed        bool
 }
@@ -127,12 +128,26 @@ func (g *gpt) Login(username, password string) error {
 	if err != nil {
 		return err
 	}
+	err = g.initUserAccountInfo()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 // Session returns the information about the current session
 func (g *gpt) Session() Session {
 	return *g.session
+}
+
+// initUserAccountInfo initialises the account information for the current user
+func (g *gpt) initUserAccountInfo() error {
+	accountInfo, err := g.getAccountInfo()
+	if err != nil {
+		return err
+	}
+	g.accountInfo = accountInfo
+	return nil
 }
 
 // Ask let you ask a new question with the given Version
@@ -314,7 +329,7 @@ func (g *gpt) internalLogin(username, password string) error {
 		return err
 	}
 	if needLogin {
-		logger.Debug("Session needs to login")
+		logger.Debug("User needs to login")
 		err := g.page.Click(loginButtonSelector)
 		if err != nil {
 			logger.Error("Error while clicking on login button selector")
@@ -358,4 +373,9 @@ func (g *gpt) internalLogin(username, password string) error {
 		return err
 	}
 	return nil
+}
+
+// AccountInfo returns the UserAccountInfo instance related to the current user account
+func (g *gpt) AccountInfo() UserAccountInfo {
+	return *g.accountInfo
 }
