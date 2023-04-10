@@ -66,11 +66,12 @@ func New(browserContextPath string, headless, debug bool) (GoGPT, error) {
 	}
 
 	return &gpt{
-		browserContextPath: browserContextPath,
-		browser:            browser,
-		page:               page,
-		session:            nil,
-		popupPassed:        false,
+		browserContextPath:  browserContextPath,
+		browser:             browser,
+		page:                page,
+		session:             nil,
+		popupPassed:         false,
+		conversationHistory: newIdBasedSet[ConversationHistoryItem](100),
 	}, nil
 }
 
