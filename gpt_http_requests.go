@@ -94,12 +94,16 @@ func (g *gpt) prepareRequest() error {
 	return nil
 }
 
+func createAPIURL(endpoint string) string {
+	return fmt.Sprintf("%s/backend-api/%s", baseURL, endpoint)
+}
+
 func (g *gpt) createRequest(method string, endpoint string, body io.Reader) (*http.Request, error) {
 	err := g.prepareRequest()
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest(method, fmt.Sprintf("%s/%s", baseURL, endpoint), body)
+	req, err := http.NewRequest(method, createAPIURL(endpoint), body)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +113,7 @@ func (g *gpt) createRequest(method string, endpoint string, body io.Reader) (*ht
 }
 
 func (g *gpt) getConversationHistory(offset, limit uint) (*ConversationsResponse, error) {
-	req, err := g.createRequest("GET", fmt.Sprintf("backend-api/conversations?offset=%d&limit=%d", offset, limit), nil)
+	req, err := g.createRequest("GET", fmt.Sprintf("conversations?offset=%d&limit=%d", offset, limit), nil)
 	if err != nil {
 		return nil, err
 	}
