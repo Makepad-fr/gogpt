@@ -19,7 +19,7 @@ func init() {
 type GoGPT interface {
 	Login(username, password string) error
 	Ask(question string, version Version)
-	History() ([]Conversation, error)
+	History() ([]ConversationHistoryItem, error)
 	AccountInfo() UserAccountInfo
 	OpenFromHistory(index uint)
 	NewChat()

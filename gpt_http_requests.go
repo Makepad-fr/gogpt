@@ -139,8 +139,8 @@ func runAPIRequest[T any](g *gpt, method, endpoint string, requestBody io.Reader
 	return &response, nil
 }
 
-func (g *gpt) getConversationHistory(offset, limit uint) (*ConversationsResponse, error) {
-	return runAPIRequest[ConversationsResponse](g, "GET", fmt.Sprintf("conversations?offset=%d&limit=%d", offset, limit), nil)
+func (g *gpt) getConversationHistory(offset, limit uint) (*ConversationHistoryResponse, error) {
+	return runAPIRequest[ConversationHistoryResponse](g, "GET", fmt.Sprintf("conversations?offset=%d&limit=%d", offset, limit), nil)
 }
 
 func (g *gpt) getAccountInfo() (*UserAccountInfo, error) {

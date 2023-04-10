@@ -1,14 +1,14 @@
 package gogpt
 
-type ConversationsResponse struct {
-	Items                   []Conversation `json:"items"`
-	Total                   int            `json:"total"`
-	Limit                   int            `json:"limit"`
-	Offset                  int            `json:"offset"`
-	HasMissingConversations bool           `json:"has_missing_conversations"`
+type ConversationHistoryResponse struct {
+	Items                   []ConversationHistoryItem `json:"items"`
+	Total                   int                       `json:"total"`
+	Limit                   int                       `json:"limit"`
+	Offset                  int                       `json:"offset"`
+	HasMissingConversations bool                      `json:"has_missing_conversations"`
 }
 
-type Conversation struct {
+type ConversationHistoryItem struct {
 	idBasedSetItem
 	ID         string `json:"id"`
 	Title      string `json:"title"`
@@ -16,6 +16,6 @@ type Conversation struct {
 	UpdateTime string `json:"update_time"`
 }
 
-func (c Conversation) getId() string {
+func (c ConversationHistoryItem) getId() string {
 	return c.ID
 }
