@@ -155,8 +155,8 @@ func (*gpt) Ask(question string, version Version) {
 
 }
 
-// History returns the history of conversations as a slice of Conversation
-func (g *gpt) History() ([]Conversation, error) {
+// History returns the history of conversations as a slice of ConversationHistoryItem
+func (g *gpt) History() ([]ConversationHistoryItem, error) {
 	const limit uint = 100
 	logger.Debug("Make a first request to get the total number of conversations")
 	response, err := g.getConversationHistory(0, limit)
@@ -164,7 +164,7 @@ func (g *gpt) History() ([]Conversation, error) {
 		logger.Error("Error while getting user's conversations")
 		return nil, err
 	}
-	set := newIdBasedSet[Conversation](response.Total)
+	set := newIdBasedSet[ConversationHistoryItem](response.Total)
 	set.addAll(response.Items)
 	logger.Debug("Items added ", zap.Int("number-of-items", set.size()))
 	var attempts = 0
