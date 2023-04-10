@@ -14,15 +14,16 @@ import (
 
 type gpt struct {
 	GoGPT
-	browserContextPath string
-	browser            playwright.Browser
-	page               playwright.Page
-	session            *Session
-	httpClient         *http.Client
-	cookieJar          *autoFillingCookieJar
-	accountInfo        *UserAccountInfo
-	username, password *string
-	popupPassed        bool
+	browserContextPath  string
+	browser             playwright.Browser
+	page                playwright.Page
+	session             *Session
+	httpClient          *http.Client
+	cookieJar           *autoFillingCookieJar
+	accountInfo         *UserAccountInfo
+	username, password  *string
+	popupPassed         bool
+	conversationHistory *idBasedSet[ConversationHistoryItem]
 }
 
 // getChallenge returns  a playwright.ElementHandle related to the challenge and an error if there's an error returned by navigate
@@ -155,34 +156,31 @@ func (*gpt) Ask(question string, version Version) {
 
 }
 
-// History returns the history of conversations as a slice of ConversationHistoryItem
-func (g *gpt) History() ([]ConversationHistoryItem, error) {
-	const limit uint = 100
+// updateConversationHistory updates the conversationHistory attribute of the current gpt instance
+func (g *gpt) updateConversationHistory(maxRetry, limit uint) error {
 	logger.Debug("Make a first request to get the total number of conversations")
 	response, err := g.getConversationHistory(0, limit)
 	if err != nil {
 		logger.Error("Error while getting user's conversations")
-		return nil, err
+		return err
 	}
-	set := newIdBasedSet[ConversationHistoryItem](response.Total)
-	set.addAll(response.Items)
-	logger.Debug("Items added ", zap.Int("number-of-items", set.size()))
-	var attempts = 0
-	const maxAttempts = 5
-	for set.size() < response.Total && attempts < maxAttempts {
+	g.conversationHistory.addAll(response.Items)
+	logger.Debug("Items added ", zap.Int("number-of-items", g.conversationHistory.size()))
+	var attempts uint = 0
+	for g.conversationHistory.size() < response.Total && attempts < maxRetry {
 		// Wait for a random timeout
 		randomTimeOut := randomTimeOut()
 		logger.Debug("Waiting for ", zap.Float64("timeout", randomTimeOut))
 		time.Sleep(time.Duration(randomTimeOut) * time.Millisecond)
-		response, err = g.getConversationHistory(uint(set.size()), uint(math.Min(float64(limit), float64(response.Total-set.size()))))
-		before := set.size()
+		response, err = g.getConversationHistory(uint(g.conversationHistory.size()), uint(math.Min(float64(limit), float64(response.Total-g.conversationHistory.size()))))
+		before := g.conversationHistory.size()
 		if err != nil {
-			return nil, err
+			return err
 		}
-		set.addAll(response.Items)
-		logger.Debug("Items added ", zap.Int("number-of-items", set.size()))
-		if before == set.size() {
-			logger.Warn("The call was not bring any result", zap.Int("size", set.size()), zap.Int("attempts-count", attempts))
+		g.conversationHistory.addAll(response.Items)
+		logger.Debug("Items added ", zap.Int("number-of-items", g.conversationHistory.size()))
+		if before == g.conversationHistory.size() {
+			logger.Warn("The call was not bring any result", zap.Int("size", g.conversationHistory.size()), zap.Uint("attempts-count", attempts))
 			/* For some reason the total number does not always match with the reel number of conversations.
 			While this solution needs to be investigated more carefully, for now we are counting a number of unsuccessful
 			attempts and stop on maxAttempts number of attempts
@@ -191,8 +189,17 @@ func (g *gpt) History() ([]ConversationHistoryItem, error) {
 		}
 
 	}
+	return nil
+}
+
+// History returns the history of conversations as a slice of ConversationHistoryItem
+func (g *gpt) History() ([]ConversationHistoryItem, error) {
+	err := g.updateConversationHistory(5, 100)
+	if err != nil {
+		return nil, err
+	}
 	// Return the created items
-	return set.content, nil
+	return g.conversationHistory.content, nil
 }
 
 // OpenFromHistory let you select a chat from the history with the given index
