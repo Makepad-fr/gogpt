@@ -112,8 +112,8 @@ func (g *gpt) createRequest(method string, endpoint string, body io.Reader) (*ht
 	return req, nil
 }
 
-func (g *gpt) getConversationHistory(offset, limit uint) (*ConversationsResponse, error) {
-	req, err := g.createRequest("GET", fmt.Sprintf("conversations?offset=%d&limit=%d", offset, limit), nil)
+func runAPIRequest[T any](g *gpt, method, endpoint string, requestBody io.Reader) (*T, error) {
+	req, err := g.createRequest(method, endpoint, requestBody)
 	if err != nil {
 		return nil, err
 	}
@@ -129,12 +129,16 @@ func (g *gpt) getConversationHistory(offset, limit uint) (*ConversationsResponse
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("error while fetching conversation history %s. Response status code %d", body, resp.StatusCode)
+		return nil, fmt.Errorf("run http %s request on  %s with %+v failed with status code %d", method, endpoint, body, resp.StatusCode)
 	}
-	var response ConversationsResponse
+	var response T
 	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, err
 	}
 
 	return &response, nil
+}
+
+func (g *gpt) getConversationHistory(offset, limit uint) (*ConversationsResponse, error) {
+	return runAPIRequest[ConversationsResponse](g, "GET", fmt.Sprintf("conversations?offset=%d&limit=%d", offset, limit), nil)
 }
