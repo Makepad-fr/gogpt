@@ -1,4 +1,4 @@
-module go.makepad.io/gogpt
+module github.com/Makepad-fr/gogpt
 
 go 1.20
 
