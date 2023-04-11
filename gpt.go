@@ -409,3 +409,12 @@ func (g *gpt) internalLogin(username, password string) error {
 func (g *gpt) AccountInfo() UserAccountInfo {
 	return *g.accountInfo
 }
+
+// Models returns the list of available models for the userr
+func (g *gpt) Models() ([]ModelInfo, error) {
+	modelResponses, err := g.getModels()
+	if err != nil {
+		return nil, err
+	}
+	return modelResponses.Models, err
+}
