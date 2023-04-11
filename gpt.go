@@ -39,6 +39,15 @@ func (g *gpt) getChallenge() (playwright.ElementHandle, error) {
 	return selector, nil
 }
 
+// Close closes the open page and the browser window
+func (g *gpt) Close() error {
+	err := g.page.Close()
+	if err != nil {
+		return err
+	}
+	return g.browser.Close()
+}
+
 // navigate goes to the baseURL
 func (g *gpt) navigate() error {
 	if strings.HasPrefix(g.page.URL(), baseURL) {
