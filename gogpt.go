@@ -25,6 +25,7 @@ type GoGPT interface {
 	Close() error
 	NewChat()
 	Session() Session
+	Models() ([]ModelInfo, error)
 	Debug()
 }
 

@@ -150,3 +150,7 @@ func (g *gpt) getAccountInfo() (*UserAccountInfo, error) {
 func (g *gpt) getConversation(uuid string) (*Conversation, error) {
 	return runAPIRequest[Conversation](g, "GET", fmt.Sprintf("conversation/%s", uuid), nil)
 }
+
+func (g *gpt) getModels() (*ModelsResponse, error) {
+	return runAPIRequest[ModelsResponse](g, "GET", "models", nil)
+}
