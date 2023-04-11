@@ -22,6 +22,7 @@ type GoGPT interface {
 	History() ([]ConversationHistoryItem, error)
 	AccountInfo() UserAccountInfo
 	LoadConversation(uuid string) (*Conversation, error)
+	Close() error
 	NewChat()
 	Session() Session
 	Debug()
