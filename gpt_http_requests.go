@@ -159,7 +159,7 @@ func (g *gpt) getModels() (*ModelsResponse, error) {
 }
 
 func (g *gpt) sendMessageToNewConversation(message, model string) error {
-	messageRequest, err := createMessageRequestForNewConversation(message, model)
+	messageRequest, err := createMessageRequestForNewConversation(message, model, g.timeZoneOffset)
 	if err != nil {
 		return nil
 	}

@@ -25,6 +25,7 @@ type gpt struct {
 	popupPassed         bool
 	conversationHistory *idBasedSet[ConversationHistoryItem]
 	availableModels     []string
+	timeZoneOffset      int
 }
 
 // getChallenge returns  a playwright.ElementHandle related to the challenge and an error if there's an error returned by navigate
