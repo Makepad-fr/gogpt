@@ -418,3 +418,10 @@ func (g *gpt) Models() ([]ModelInfo, error) {
 	}
 	return modelResponses.Models, err
 }
+
+func (g *gpt) CreateConversation(message, model string) error {
+	// TODO: Check if the given model is in the models array (to add in gpt structure)
+	// TODO: Add callbacks to handle the event
+	return g.sendMessageToNewConversation(message, model)
+
+}
