@@ -27,6 +27,7 @@ type GoGPT interface {
 	Session() Session
 	Models() ([]ModelInfo, error)
 	Debug()
+	CreateConversation(message, model string) error
 }
 
 func New(browserContextPath string, headless, debug bool) (GoGPT, error) {
