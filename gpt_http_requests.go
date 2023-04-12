@@ -1,7 +1,10 @@
 package gogpt
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go.uber.org/zap"
 	"io"
@@ -103,21 +106,21 @@ func (g *gpt) createRequest(method string, endpoint string, body io.Reader) (*ht
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest(method, createAPIURL(endpoint), body)
+	request, err := http.NewRequest(method, createAPIURL(endpoint), body)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", g.session.AccessToken))
-	req.Header.Set("content-type", "/application/json")
-	return req, nil
+	request.Header.Set("authorization", fmt.Sprintf("Bearer %s", g.session.AccessToken))
+	request.Header.Set("content-type", "application/json")
+	return request, nil
 }
 
 func runAPIRequest[T any](g *gpt, method, endpoint string, requestBody io.Reader) (*T, error) {
-	req, err := g.createRequest(method, endpoint, requestBody)
+	request, err := g.createRequest(method, endpoint, requestBody)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := g.httpClient.Do(req)
+	resp, err := g.httpClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -153,4 +156,61 @@ func (g *gpt) getConversation(uuid string) (*Conversation, error) {
 
 func (g *gpt) getModels() (*ModelsResponse, error) {
 	return runAPIRequest[ModelsResponse](g, "GET", "models", nil)
+}
+
+func (g *gpt) sendMessageToNewConversation(message, model string) error {
+	messageRequest, err := createMessageRequestForNewConversation(message, model)
+	if err != nil {
+		return nil
+	}
+	requestBody, err := json.Marshal(*messageRequest)
+	if err != nil {
+		return err
+	}
+
+	request, err := g.createRequest("POST", "conversation", bytes.NewBuffer(requestBody))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Accept", "text/event-stream")
+	request.Header.Set("DNT", "1")
+	request.Header.Set("Origin", "https://chat.openai.com")
+	request.Header.Set("Referer", "https://chat.openai.com/")
+	request.Header.Set("Sec-Fetch-Dest", "empty")
+	request.Header.Set("Sec-Fetch-Mode", "cors")
+	request.Header.Set("Sec-Fetch-Site", "same-site")
+	request.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.146 Safari/537.36")
+	logger.Debug("Request headers", zap.Any("headers", request.Header))
+
+	resp, err := g.httpClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		reader, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		logger.Error("Send message to new conversation is failed", zap.Int("status-code", resp.StatusCode), zap.String("body", string(reader)), zap.String("url", request.URL.String()))
+		return fmt.Errorf("send message to new conversation is failed. Status code %d", resp.StatusCode)
+	}
+	// Read and process the events
+	reader := bufio.NewReader(resp.Body)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				// Process the event
+				logger.Debug("EOF detected", zap.String("current-line", line))
+				break
+			}
+			logger.Error("Error while handling event", zap.Any("error", err))
+			return err
+		}
+
+		// Process the event
+		logger.Debug("Received event", zap.String("current-line", line))
+	}
+	return nil
 }
