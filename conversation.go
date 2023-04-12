@@ -68,8 +68,8 @@ type NewMessageRequest struct {
 	ConversationId    string    `json:"conversation_id,omitempty"`
 }
 
-func createMessageRequestInExistingConversation(message, model, conversationUUID string) (*NewMessageRequest, error) {
-	messageRequest, err := createMessageRequestForNewConversation(message, model)
+func createMessageRequestInExistingConversation(message, model, conversationUUID string, timeZoneOffset int) (*NewMessageRequest, error) {
+	messageRequest, err := createMessageRequestForNewConversation(message, model, timeZoneOffset)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func createMessageRequestInExistingConversation(message, model, conversationUUID
 	return messageRequest, nil
 }
 
-func createMessageRequestForNewConversation(message, model string) (*NewMessageRequest, error) {
+func createMessageRequestForNewConversation(message, model string, timeZoneOffset int) (*NewMessageRequest, error) {
 	messageUUID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func createMessageRequestForNewConversation(message, model string) (*NewMessageR
 			},
 		},
 		Model:             model,
-		TimezoneOffsetMin: -120,
+		TimezoneOffsetMin: timeZoneOffset,
 		ParentMessageID:   parentUUID.String(),
 	}, nil
 }
