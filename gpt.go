@@ -24,6 +24,7 @@ type gpt struct {
 	username, password  *string
 	popupPassed         bool
 	conversationHistory *idBasedSet[ConversationHistoryItem]
+	availableModels     []string
 }
 
 // getChallenge returns  a playwright.ElementHandle related to the challenge and an error if there's an error returned by navigate
@@ -141,6 +142,22 @@ func (g *gpt) Login(username, password string) error {
 	err = g.initUserAccountInfo()
 	if err != nil {
 		return err
+	}
+	err = g.initAvailableModels()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// initAvailableModels initialises availableModels in the current gpt instance.
+func (g *gpt) initAvailableModels() error {
+	modelInfo, err := g.Models()
+	if err != nil {
+		return err
+	}
+	for _, mi := range modelInfo {
+		g.availableModels = append(g.availableModels, mi.Slug)
 	}
 	return nil
 }
@@ -419,8 +436,20 @@ func (g *gpt) Models() ([]ModelInfo, error) {
 	return modelResponses.Models, err
 }
 
+func (g *gpt) isModelExists(model string) bool {
+	for _, availableModelSlug := range g.availableModels {
+		if model == availableModelSlug {
+			return true
+		}
+	}
+	return false
+}
+
 func (g *gpt) CreateConversation(message, model string) error {
 	// TODO: Check if the given model is in the models array (to add in gpt structure)
+	if !g.isModelExists(model) {
+		return fmt.Errorf("%s is not a valid model", model)
+	}
 	// TODO: Add callbacks to handle the event
 	return g.sendMessageToNewConversation(message, model)
 
