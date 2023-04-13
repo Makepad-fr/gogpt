@@ -1,8 +1,11 @@
 # gogpt
+[![Go Report Card](https://goreportcard.com/badge/github.com/Makepad-fr/gogpt)](https://goreportcard.com/report/github.com/Makepad-fr/gogpt)
+
+---
+
 GoGPT is a Go library which let users use their ChatGPT accounts through Go.
 With GoGPT you can do everything that you can do with your ChatGPT account in the Web interface.
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/Makepad-fr/gogpt)](https://goreportcard.com/report/github.com/Makepad-fr/gogpt)
 
 ## Installation
 
