@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type httpCookieSupplier func() ([]*http.Cookie,error)
+type httpCookieSupplier func() ([]*http.Cookie, error)
 
 // autoFillingCookieJar embeds *cookiejar.Jar and adds a custom method that supplies fresh cookies
 type autoFillingCookieJar struct {
@@ -23,7 +23,6 @@ func (c *autoFillingCookieJar) setExpiredCookies() error {
 		return errors.New("NewCookiesSupplier is empty")
 	}
 
-
 	cookies := c.Cookies(c.u)
 	for _, cookie := range cookies {
 		if cookie.Expires.Before(time.Now()) {
@@ -37,8 +36,8 @@ func (c *autoFillingCookieJar) setExpiredCookies() error {
 	return nil
 }
 
-//createNewAutoFillingCookieJar creates a new cookie jar related to the given url string and with given httpCookieSupplier
-func createNewAutoFillingCookieJar(urlString string, supplier httpCookieSupplier) (*autoFillingCookieJar,error) {
+// createNewAutoFillingCookieJar creates a new cookie jar related to the given url string and with given httpCookieSupplier
+func createNewAutoFillingCookieJar(urlString string, supplier httpCookieSupplier) (*autoFillingCookieJar, error) {
 	u, err := url.Parse(urlString)
 	if err != nil {
 		return nil, err
@@ -59,4 +58,3 @@ func createNewAutoFillingCookieJar(urlString string, supplier httpCookieSupplier
 	cj.SetCookies(cj.u, cookies)
 	return cj, nil
 }
-
