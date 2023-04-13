@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 	"io"
 	"net/http"
+	"strings"
 )
 
 // initCookieJarAndHttpClient initialises the autoFillingCookieJar and http.Client instances inside the current *gpt instance
@@ -158,7 +159,9 @@ func (g *gpt) getModels() (*ModelsResponse, error) {
 	return runAPIRequest[ModelsResponse](g, "GET", "models", nil)
 }
 
-func (g *gpt) sendMessageToNewConversation(message, model string) error {
+// sendMessageToNewConversation creates a new conversation by sending the given message and using the given model.
+// for each response event it calls onResponse function to handle the response as CovnersationResponse
+func (g *gpt) sendMessageToNewConversation(message, model string, onResponse conversationResponseConsumer) error {
 	messageRequest, err := createMessageRequestForNewConversation(message, model, g.timeZoneOffset)
 	if err != nil {
 		return nil
@@ -192,11 +195,21 @@ func (g *gpt) sendMessageToNewConversation(message, model string) error {
 		if err != nil {
 			return err
 		}
-		logger.Error("Send message to new conversation is failed", zap.Int("status-code", resp.StatusCode), zap.String("body", string(reader)), zap.String("url", request.URL.String()))
+		logger.Error("Send message to new conversation is failed", zap.Int("status-code", resp.StatusCode),
+			zap.String("body", string(reader)), zap.String("url", request.URL.String()))
 		return fmt.Errorf("send message to new conversation is failed. Status code %d", resp.StatusCode)
 	}
 	// Read and process the events
 	reader := bufio.NewReader(resp.Body)
+	err = handleConversationResponseEvent(reader, onResponse)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// handleConversationResponseEvent handles the conversation response events as *bufio.Reader using the given conversationResponseConsumer function
+func handleConversationResponseEvent(reader *bufio.Reader, onResponse conversationResponseConsumer) error {
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
@@ -208,7 +221,32 @@ func (g *gpt) sendMessageToNewConversation(message, model string) error {
 			logger.Error("Error while handling event", zap.Any("error", err))
 			return err
 		}
-
+		if isEmpty(line) {
+			logger.Debug("Empty line received", zap.String("line", line))
+			// If the line is empty do nothing just continue
+			continue
+		}
+		if isEndOfEventStream(line) {
+			logger.Debug("End of the event stream received", zap.String("line", line))
+			// If the line is the end of the event stream quit the loop
+			break
+		}
+		if strings.HasPrefix(line, "data: ") {
+			trimmedLine := strings.TrimSpace(strings.TrimPrefix(line, "data: "))
+			var response CovnersationResponse
+			err := json.Unmarshal([]byte(trimmedLine), &response)
+			if err != nil {
+				logger.Error("Error while parsing conversation response to ConversationRequestEvent",
+					zap.String("line", line))
+				return err
+			}
+			onResponse(response)
+			if response.Message.Author.Role == "assistant" && response.Message.EndTurn != nil && *response.Message.EndTurn {
+				logger.Debug("Received the last message", zap.Any("response", response))
+				// If the response indicates the end, quit the loop
+				break
+			}
+		}
 		// Process the event
 		logger.Debug("Received event", zap.String("current-line", line))
 	}

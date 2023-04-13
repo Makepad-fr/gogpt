@@ -75,7 +75,9 @@ import (
 )
 func main() {
 	...
-	err = gpt.CreateConversation("<PROMPT>", "<MDDEL_SLUG>")
+	err = gpt.CreateConversation("<PROMPT>", "<MDDEL_SLUG>", func(response gogpt.ConversationResponse) {
+		log.Printf("Received response %+v", response)
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
