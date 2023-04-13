@@ -98,10 +98,12 @@ func (g *gpt) prepareRequest() error {
 	return nil
 }
 
+// createAPIURL creates the API url for the given endpoint
 func createAPIURL(endpoint string) string {
 	return fmt.Sprintf("%s/backend-api/%s", baseURL, endpoint)
 }
 
+// createRequest creates a new http.Request using given method, endpoint and body.
 func (g *gpt) createRequest(method string, endpoint string, body io.Reader) (*http.Request, error) {
 	err := g.prepareRequest()
 	if err != nil {
@@ -116,6 +118,8 @@ func (g *gpt) createRequest(method string, endpoint string, body io.Reader) (*ht
 	return request, nil
 }
 
+// runAPIRequest makes an HTTP request with given method on the given endpoint with the given requestBody as io.Reader.
+// It handles the response as JSON and unmarshal it to the parameterized type
 func runAPIRequest[T any](g *gpt, method, endpoint string, requestBody io.Reader) (*T, error) {
 	request, err := g.createRequest(method, endpoint, requestBody)
 	if err != nil {
@@ -143,18 +147,22 @@ func runAPIRequest[T any](g *gpt, method, endpoint string, requestBody io.Reader
 	return &response, nil
 }
 
+// getConversationHistory returns the history of conversation using given offset and limit as ConversationHistoryResponse
 func (g *gpt) getConversationHistory(offset, limit uint) (*ConversationHistoryResponse, error) {
 	return runAPIRequest[ConversationHistoryResponse](g, "GET", fmt.Sprintf("conversations?offset=%d&limit=%d", offset, limit), nil)
 }
 
+// getAccountInfo returns the additional information about the user's account as UserAccountInfo pointer
 func (g *gpt) getAccountInfo() (*UserAccountInfo, error) {
 	return runAPIRequest[UserAccountInfo](g, "GET", "accounts/check", nil)
 }
 
+// getConversation get the details of a conversation by its uuid as Conversation pointer
 func (g *gpt) getConversation(uuid string) (*Conversation, error) {
 	return runAPIRequest[Conversation](g, "GET", fmt.Sprintf("conversation/%s", uuid), nil)
 }
 
+// getModels returns the available models as ModelsResponse
 func (g *gpt) getModels() (*ModelsResponse, error) {
 	return runAPIRequest[ModelsResponse](g, "GET", "models", nil)
 }
