@@ -34,7 +34,7 @@ func unmarshalGPTSessionResponseJSON(jsonData []byte) (*Session, error) {
 }
 
 // isExpired function verifies if the current session is expired by using its Expires attribute
-// if returns an error if the Expires string can not be pased using sessionExpirationTimeLayout
+// if returns an error if the Expires string can not be passed using sessionExpirationTimeLayout
 func (s *Session) isExpired() (bool, error) {
 	expirationTime, err := time.Parse(sessionExpirationTimeLayout, s.Expires)
 	if err != nil {
