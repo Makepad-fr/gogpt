@@ -16,8 +16,9 @@ type Message struct {
 	ID         string                 `json:"id"`
 	Author     Author                 `json:"author"`
 	CreateTime float64                `json:"create_time,omitempty"`
+	UpdateTime *float64               `json:"update_time,omitempty"`
 	Content    Content                `json:"content"`
-	EndTurn    bool                   `json:"end_turn,omitempty"`
+	EndTurn    *bool                  `json:"end_turn,omitempty"`
 	Weight     float64                `json:"weight,omitempty"`
 	Metadata   map[string]interface{} `json:"metadata,omitempty"`
 	Recipient  string                 `json:"recipient,omitempty"`
@@ -67,6 +68,14 @@ type NewMessageRequest struct {
 	TimezoneOffsetMin int       `json:"timezone_offset_min"`
 	ConversationId    string    `json:"conversation_id,omitempty"`
 }
+
+type CovnersationResponse struct {
+	Message        Message `json:"message"`
+	ConversationID string  `json:"conversation_id"`
+	Error          *string `json:"error"`
+}
+
+type conversationResponseConsumer func(event CovnersationResponse)
 
 func createMessageRequestInExistingConversation(message, model, conversationUUID string, timeZoneOffset int) (*NewMessageRequest, error) {
 	messageRequest, err := createMessageRequestForNewConversation(message, model, timeZoneOffset)
