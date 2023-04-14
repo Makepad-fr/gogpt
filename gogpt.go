@@ -30,9 +30,17 @@ type GoGPT interface {
 	CreateConversation(message, model string, onResponseCallback conversationResponseConsumer) error
 }
 
-func New(browserContextPath string, headless, debug bool, timeZoneOffset int, timeout *float64) (GoGPT, error) {
+type Options struct {
+	BrowserContextPath string
+	Headless           bool
+	Debug              *bool
+	TimeZoneOffset     int
+	Timeout            *float64
+}
+
+func New(options Options) (GoGPT, error) {
 	var loadFromBrowserContext bool
-	s, err := os.Stat(browserContextPath)
+	s, err := os.Stat(options.BrowserContextPath)
 	if err != nil {
 		loadFromBrowserContext = false
 	} else {
@@ -44,12 +52,12 @@ func New(browserContextPath string, headless, debug bool, timeZoneOffset int, ti
 	}
 	var browserContextPathPtr *string = nil
 	if loadFromBrowserContext {
-		browserContextPathPtr = &browserContextPath
+		browserContextPathPtr = &options.BrowserContextPath
 	}
 	var l *zap.Logger
-	if debug {
+	if options.Debug != nil && *options.Debug {
 		l, err = zap.NewDevelopment()
-		headless = false
+		options.Headless = false
 	} else {
 		l, err = zap.NewProduction()
 	}
@@ -57,7 +65,7 @@ func New(browserContextPath string, headless, debug bool, timeZoneOffset int, ti
 		return nil, err
 	}
 	logger = l
-	browser, err := pw.Firefox.Launch(playwright.BrowserTypeLaunchOptions{Headless: &headless})
+	browser, err := pw.Firefox.Launch(playwright.BrowserTypeLaunchOptions{Headless: &options.Headless})
 	if err != nil {
 		return nil, err
 	}
@@ -69,15 +77,15 @@ func New(browserContextPath string, headless, debug bool, timeZoneOffset int, ti
 	}
 
 	return &gpt{
-		browserContextPath:  browserContextPath,
+		browserContextPath:  options.BrowserContextPath,
 		browser:             browser,
 		page:                page,
 		session:             nil,
 		popupPassed:         false,
 		conversationHistory: newIdBasedSet[ConversationHistoryItem](100),
 		availableModels:     []string{},
-		timeZoneOffset:      timeZoneOffset,
-		timeout:             timeout,
+		timeZoneOffset:      options.TimeZoneOffset,
+		timeout:             options.Timeout,
 	}, nil
 }
 
