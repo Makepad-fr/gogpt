@@ -75,6 +75,14 @@ type ConversationResponse struct {
 	Error          *string `json:"error"`
 }
 
+type GenerateConversationTitleResponse struct {
+	Title string `json:"title"`
+}
+
+type GenerateConversationTitleRequestBody struct {
+	MessageId string `json:"message_id"`
+}
+
 type conversationResponseConsumer func(event ConversationResponse)
 
 func createMessageRequestInExistingConversation(message, model, conversationUUID string, timeZoneOffset int) (*NewMessageRequest, error) {

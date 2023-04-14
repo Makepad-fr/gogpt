@@ -208,7 +208,7 @@ func (g *gpt) sendMessageToNewConversation(message, model string, onResponse con
 	}
 	// Read and process the events
 	reader := bufio.NewReader(resp.Body)
-	conversationId, err := handleConversationResponseEvent(reader, onResponse)
+	conversationId, err := g.handleConversationResponseEvent(reader, onResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +216,7 @@ func (g *gpt) sendMessageToNewConversation(message, model string, onResponse con
 }
 
 // handleConversationResponseEvent handles the conversation response events as *bufio.Reader using the given conversationResponseConsumer function
-func handleConversationResponseEvent(reader *bufio.Reader, onResponse conversationResponseConsumer) ([]byte, error) {
+func (g *gpt) handleConversationResponseEvent(reader *bufio.Reader, onResponse conversationResponseConsumer) ([]byte, error) {
 	var conversationId string = ""
 	for {
 		line, err := reader.ReadString('\n')
@@ -256,6 +256,15 @@ func handleConversationResponseEvent(reader *bufio.Reader, onResponse conversati
 					logger.Warn("THe conversation id is different then the current one", zap.String("current-conversation-id", response.ConversationID), zap.String("existing-conversation-id", conversationId))
 				}
 			}
+			if response.Message.Author.Role == "user" {
+				title, err := g.GenerateTitle(response.ConversationID, response.Message.ID)
+				if err != nil {
+					logger.Error("Error while generating title")
+					return nil, err
+				}
+				logger.Info("Title generated for the new conversation", zap.ByteString("title", title))
+				continue
+			}
 			if response.Message.Author.Role == "assistant" {
 				onResponse(response)
 				if response.Message.EndTurn != nil && *response.Message.EndTurn {
@@ -270,4 +279,20 @@ func handleConversationResponseEvent(reader *bufio.Reader, onResponse conversati
 		logger.Debug("Received event", zap.String("current-line", line))
 	}
 	return []byte(conversationId), nil
+}
+
+// GenerateTitle generates the title for the given conversation and given message. It returns the generated title as
+// []byte
+func (g *gpt) GenerateTitle(conversationId, messageId string) ([]byte, error) {
+	// https://chat.openai.com/backend-api/conversation/gen_title/b3a28cf1-7f6e-450e-b08a-dab473549383
+	requestBody, err := json.Marshal(GenerateConversationTitleRequestBody{MessageId: messageId})
+	if err != nil {
+		return nil, err
+	}
+	endPoint := fmt.Sprintf("conversation/gen_title/%s", conversationId)
+	response, err := runAPIRequest[GenerateConversationTitleResponse](g, http.MethodPost, endPoint, bytes.NewBuffer(requestBody))
+	if err != nil {
+		return nil, err
+	}
+	return []byte(response.Title), nil
 }
