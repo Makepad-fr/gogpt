@@ -111,6 +111,10 @@ func main() {
 
 TBD
 
+### Generate title
+
+You can generate conversation title using `GenerateTitle`. To achieve this you need to pass the UUID of the conversation and the uuid of the message used to generate the title.
+
 ### Getting conversation history
 
 You can get your conversation history using the `History` method on the `gpt` instance that you previously created
