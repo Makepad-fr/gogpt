@@ -448,12 +448,15 @@ func (g *gpt) isModelExists(model string) bool {
 }
 
 // CreateConversation creates a new conversation by sending the given message and using the given model. For each response
-// received by the ChatGPT, it calls the onResponse callback with the received response as ConversationResponse.
-func (g *gpt) CreateConversation(message, model string, onResponse conversationResponseConsumer) error {
+// received by the ChatGPT, it calls the onResponse callback with the received response as ConversationResponse. Once all
+// events of the response are received, the related Conversation is loaded and returned
+func (g *gpt) CreateConversation(message, model string, onResponse conversationResponseConsumer) (*Conversation, error) {
 	if !g.isModelExists(model) {
-		return fmt.Errorf("%s is not a valid model", model)
+		return nil, fmt.Errorf("%s is not a valid model", model)
 	}
-	// TODO: Change return type to conversation. Load the converstaion with the response conversation id and returns the loaded conversation
-	return g.sendMessageToNewConversation(message, model, onResponse)
-
+	conversationId, err := g.sendMessageToNewConversation(message, model, onResponse)
+	if err != nil {
+		return nil, err
+	}
+	return g.LoadConversation(string(conversationId))
 }

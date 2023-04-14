@@ -169,19 +169,19 @@ func (g *gpt) getModels() (*ModelsResponse, error) {
 
 // sendMessageToNewConversation creates a new conversation by sending the given message and using the given model.
 // for each response event it calls onResponse function to handle the response as ConversationResponse
-func (g *gpt) sendMessageToNewConversation(message, model string, onResponse conversationResponseConsumer) error {
+func (g *gpt) sendMessageToNewConversation(message, model string, onResponse conversationResponseConsumer) ([]byte, error) {
 	messageRequest, err := createMessageRequestForNewConversation(message, model, g.timeZoneOffset)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	requestBody, err := json.Marshal(*messageRequest)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	request, err := g.createRequest("POST", "conversation", bytes.NewBuffer(requestBody))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	request.Header.Set("Accept", "text/event-stream")
 	request.Header.Set("DNT", "1")
@@ -194,29 +194,30 @@ func (g *gpt) sendMessageToNewConversation(message, model string, onResponse con
 
 	resp, err := g.httpClient.Do(request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		reader, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		logger.Error("Send message to new conversation is failed", zap.Int("status-code", resp.StatusCode),
 			zap.String("body", string(reader)), zap.String("url", request.URL.String()))
-		return fmt.Errorf("send message to new conversation is failed. Status code %d", resp.StatusCode)
+		return nil, fmt.Errorf("send message to new conversation is failed. Status code %d", resp.StatusCode)
 	}
 	// Read and process the events
 	reader := bufio.NewReader(resp.Body)
-	err = handleConversationResponseEvent(reader, onResponse)
+	conversationId, err := handleConversationResponseEvent(reader, onResponse)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return conversationId, nil
 }
 
 // handleConversationResponseEvent handles the conversation response events as *bufio.Reader using the given conversationResponseConsumer function
-func handleConversationResponseEvent(reader *bufio.Reader, onResponse conversationResponseConsumer) error {
+func handleConversationResponseEvent(reader *bufio.Reader, onResponse conversationResponseConsumer) ([]byte, error) {
+	var conversationId string = ""
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
@@ -226,7 +227,7 @@ func handleConversationResponseEvent(reader *bufio.Reader, onResponse conversati
 				break
 			}
 			logger.Error("Error while handling event", zap.Any("error", err))
-			return err
+			return nil, err
 		}
 		if isEmpty(line) {
 			logger.Debug("Empty line received", zap.String("line", line))
@@ -239,23 +240,34 @@ func handleConversationResponseEvent(reader *bufio.Reader, onResponse conversati
 			break
 		}
 		if strings.HasPrefix(line, "data: ") {
+
 			trimmedLine := strings.TrimSpace(strings.TrimPrefix(line, "data: "))
-			var response CovnersationResponse
+			var response ConversationResponse
 			err := json.Unmarshal([]byte(trimmedLine), &response)
 			if err != nil {
 				logger.Error("Error while parsing conversation response to ConversationRequestEvent",
 					zap.String("line", line))
-				return err
+				return nil, err
 			}
-			onResponse(response)
-			if response.Message.Author.Role == "assistant" && response.Message.EndTurn != nil && *response.Message.EndTurn {
-				logger.Debug("Received the last message", zap.Any("response", response))
-				// If the response indicates the end, quit the loop
-				break
+			if isEmpty(conversationId) {
+				conversationId = response.ConversationID
+			} else {
+				if conversationId != response.ConversationID {
+					logger.Warn("THe conversation id is different then the current one", zap.String("current-conversation-id", response.ConversationID), zap.String("existing-conversation-id", conversationId))
+				}
 			}
+			if response.Message.Author.Role == "assistant" {
+				onResponse(response)
+				if response.Message.EndTurn != nil && *response.Message.EndTurn {
+					logger.Debug("Received the last message", zap.Any("response", response))
+					// If the response indicates the end, quit the loop
+					break
+				}
+			}
+
 		}
 		// Process the event
 		logger.Debug("Received event", zap.String("current-line", line))
 	}
-	return nil
+	return []byte(conversationId), nil
 }
