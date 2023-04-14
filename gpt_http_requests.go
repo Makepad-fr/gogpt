@@ -168,7 +168,7 @@ func (g *gpt) getModels() (*ModelsResponse, error) {
 }
 
 // sendMessageToNewConversation creates a new conversation by sending the given message and using the given model.
-// for each response event it calls onResponse function to handle the response as CovnersationResponse
+// for each response event it calls onResponse function to handle the response as ConversationResponse
 func (g *gpt) sendMessageToNewConversation(message, model string, onResponse conversationResponseConsumer) error {
 	messageRequest, err := createMessageRequestForNewConversation(message, model, g.timeZoneOffset)
 	if err != nil {

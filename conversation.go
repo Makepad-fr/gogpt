@@ -69,13 +69,13 @@ type NewMessageRequest struct {
 	ConversationId    string    `json:"conversation_id,omitempty"`
 }
 
-type CovnersationResponse struct {
+type ConversationResponse struct {
 	Message        Message `json:"message"`
 	ConversationID string  `json:"conversation_id"`
 	Error          *string `json:"error"`
 }
 
-type conversationResponseConsumer func(event CovnersationResponse)
+type conversationResponseConsumer func(event ConversationResponse)
 
 func createMessageRequestInExistingConversation(message, model, conversationUUID string, timeZoneOffset int) (*NewMessageRequest, error) {
 	messageRequest, err := createMessageRequestForNewConversation(message, model, timeZoneOffset)
