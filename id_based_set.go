@@ -1,17 +1,17 @@
 package gogpt
 
-type idBasedSetItem interface {
+type idBasedItem interface {
 	getId() string
 }
 
-type idBasedSet[T idBasedSetItem] struct {
-	content []T
+type idBasedSet[T idBasedItem] struct {
+	Content []T
 }
 
 // newIdBasedSet creates a new idBasedSet instance with a given capacity
-func newIdBasedSet[T idBasedSetItem](capacity int) *idBasedSet[T] {
+func newIdBasedSet[T idBasedItem](capacity int) *idBasedSet[T] {
 	return &idBasedSet[T]{
-		content: make([]T, 0, capacity),
+		Content: make([]T, 0, capacity),
 	}
 }
 
@@ -20,7 +20,7 @@ func (s *idBasedSet[T]) add(itemToAdd T) bool {
 	if s.contains(itemToAdd) {
 		return false
 	}
-	s.content = append(s.content, itemToAdd)
+	s.Content = append(s.Content, itemToAdd)
 	return true
 }
 
@@ -33,7 +33,7 @@ func (s *idBasedSet[T]) addAll(itemsToAdd []T) {
 
 // contains check if the given item is in the current idBasedSet instance or not
 func (s *idBasedSet[T]) contains(itemToVerify T) bool {
-	for _, item := range s.content {
+	for _, item := range s.Content {
 		if item.getId() == itemToVerify.getId() {
 			return true
 		}
@@ -43,7 +43,7 @@ func (s *idBasedSet[T]) contains(itemToVerify T) bool {
 
 // find finds the element which has the given id in the current idBasedSet
 func (s *idBasedSet[T]) find(id string) *T {
-	for _, item := range s.content {
+	for _, item := range s.Content {
 		if item.getId() == id {
 			return &item
 		}
@@ -53,5 +53,5 @@ func (s *idBasedSet[T]) find(id string) *T {
 
 // size returns the length of the idBasedSet instance
 func (s *idBasedSet[T]) size() int {
-	return len(s.content)
+	return len(s.Content)
 }

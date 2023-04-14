@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Makepad-fr/gogpt/internal"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -178,7 +179,6 @@ func (g *gpt) sendMessageToNewConversation(message, model string, onResponse con
 	if err != nil {
 		return nil, err
 	}
-
 	request, err := g.createRequest("POST", "conversation", bytes.NewBuffer(requestBody))
 	if err != nil {
 		return nil, err
@@ -203,7 +203,8 @@ func (g *gpt) sendMessageToNewConversation(message, model string, onResponse con
 			return nil, err
 		}
 		logger.Error("Send message to new conversation is failed", zap.Int("status-code", resp.StatusCode),
-			zap.String("body", string(reader)), zap.String("url", request.URL.String()))
+			zap.String("body", string(reader)), zap.String("url", request.URL.String()),
+			zap.ByteString("request-body", requestBody))
 		return nil, fmt.Errorf("send message to new conversation is failed. Status code %d", resp.StatusCode)
 	}
 	// Read and process the events
@@ -217,7 +218,7 @@ func (g *gpt) sendMessageToNewConversation(message, model string, onResponse con
 
 // handleConversationResponseEvent handles the conversation response events as *bufio.Reader using the given conversationResponseConsumer function
 func (g *gpt) handleConversationResponseEvent(reader *bufio.Reader, onResponse conversationResponseConsumer) ([]byte, error) {
-	var conversationId string = ""
+	var conversationId = ""
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
@@ -285,7 +286,7 @@ func (g *gpt) handleConversationResponseEvent(reader *bufio.Reader, onResponse c
 // []byte
 func (g *gpt) GenerateTitle(conversationId, messageId string) ([]byte, error) {
 	// https://chat.openai.com/backend-api/conversation/gen_title/b3a28cf1-7f6e-450e-b08a-dab473549383
-	requestBody, err := json.Marshal(GenerateConversationTitleRequestBody{MessageId: messageId})
+	requestBody, err := json.Marshal(internal.GenerateConversationTitleRequestBody{MessageId: messageId})
 	if err != nil {
 		return nil, err
 	}

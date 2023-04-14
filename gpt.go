@@ -227,7 +227,7 @@ func (g *gpt) History() ([]ConversationHistoryItem, error) {
 		return nil, err
 	}
 	// Return the created items
-	return g.conversationHistory.content, nil
+	return g.conversationHistory.Content, nil
 }
 
 // LoadConversation loads a conversation from the chat history using the conversation uuid
