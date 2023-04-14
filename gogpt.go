@@ -38,6 +38,7 @@ type Options struct {
 	Timeout            *float64
 }
 
+// New creates a new instance of GoGPT with given Options
 func New(options Options) (GoGPT, error) {
 	var loadFromBrowserContext bool
 	s, err := os.Stat(options.BrowserContextPath)
