@@ -1,4 +1,5 @@
 # gogpt
+[![GoDoc](https://godoc.org/github.com/Makepad-fr/gogpt?status.svg)](https://godoc.org/github.com/Makepad-fr/gogpt)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Makepad-fr/gogpt)](https://goreportcard.com/report/github.com/Makepad-fr/gogpt)
 
 ---
