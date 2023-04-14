@@ -29,6 +29,7 @@ type GoGPT interface {
 	Debug()
 	CreateConversation(message, model string, onResponseCallback conversationResponseConsumer) (*Conversation, error)
 	GenerateTitle(conversationId, messageId string) ([]byte, error)
+	Moderation(conversationId, messageId, messageText string) (*TextModerationResponse, error)
 }
 
 type Options struct {

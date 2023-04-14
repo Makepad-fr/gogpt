@@ -165,6 +165,25 @@ func main() {
 }
 ```
 
+### Get text moderation
+
+You can get text moderation using `Moderation` method by passing the UUID of the conversation, UUID of the message and the text of the message to get the moderation.
+
+```go
+package main
+
+import "log"
+
+...
+func main() {
+	...
+	moderation, err := gpt.Moderation("<CONVERSATION_UUID>", "<MESSAGE_UUID>", "<MESSAGE_TEXT>")
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Moderation response %+v", moderation)
+}
+```
 
 
 

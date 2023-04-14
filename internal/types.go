@@ -1,5 +1,12 @@
 package internal
 
+type TextModerationRequestBody struct {
+	ConversationId string `json:"conversation_id"`
+	Input          string `json:"input"`
+	MessageID      string `json:"message_id"`
+	Model          string `json:"model"`
+}
+
 type Content struct {
 	ContentType string   `json:"content_type"`
 	Parts       []string `json:"parts"`

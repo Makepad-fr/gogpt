@@ -264,6 +264,15 @@ func (g *gpt) handleConversationResponseEvent(reader *bufio.Reader, onResponse c
 					return nil, err
 				}
 				logger.Info("Title generated for the new conversation", zap.ByteString("title", title))
+				moderationResponse, err := g.Moderation(response.ConversationID, response.Message.ID, response.Message.Content.Parts[0])
+				if err != nil {
+					logger.Error("Error while getting moderation",
+						zap.String("conversationId", response.ConversationID),
+						zap.String("messageId", response.Message.ID),
+						zap.String("messageText", response.Message.Content.Parts[0]))
+					return nil, err
+				}
+				logger.Info("Moderation response for message", zap.Any("response", moderationResponse))
 				continue
 			}
 			if response.Message.Author.Role == "assistant" {
@@ -285,7 +294,6 @@ func (g *gpt) handleConversationResponseEvent(reader *bufio.Reader, onResponse c
 // GenerateTitle generates the title for the given conversation and given message. It returns the generated title as
 // []byte
 func (g *gpt) GenerateTitle(conversationId, messageId string) ([]byte, error) {
-	// https://chat.openai.com/backend-api/conversation/gen_title/b3a28cf1-7f6e-450e-b08a-dab473549383
 	requestBody, err := json.Marshal(internal.GenerateConversationTitleRequestBody{MessageId: messageId})
 	if err != nil {
 		return nil, err
@@ -296,4 +304,23 @@ func (g *gpt) GenerateTitle(conversationId, messageId string) ([]byte, error) {
 		return nil, err
 	}
 	return []byte(response.Title), nil
+}
+
+// Moderation checks for the text moderation for given conversationId, messageId and messageText.
+// It returns a TextModerationResponse and an error if something goes wrong
+func (g *gpt) Moderation(conversationId, messageId, messageText string) (*TextModerationResponse, error) {
+	requestBody, err := json.Marshal(internal.TextModerationRequestBody{
+		ConversationId: conversationId,
+		Input:          messageText,
+		MessageID:      messageId,
+		Model:          "text-moderation-playground",
+	})
+	if err != nil {
+		logger.Error("Error while getting text moderation",
+			zap.String("conversationId", conversationId),
+			zap.String("messageId", messageText),
+			zap.String("messageText", messageText))
+		return nil, err
+	}
+	return runAPIRequest[TextModerationResponse](g, http.MethodPost, "moderations", bytes.NewBuffer(requestBody))
 }
