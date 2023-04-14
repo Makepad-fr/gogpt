@@ -97,12 +97,13 @@ import (
 )
 func main() {
 	...
-	err = gpt.CreateConversation("<PROMPT>", "<MDDEL_SLUG>", func(response gogpt.ConversationResponse) {
+	conversation, err := gpt.CreateConversation("Hello", "text-davinci-002-render-sha", func(response gogpt.ConversationResponse) {
 		log.Printf("Received response %+v", response)
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Printf("Created conversation %+v\n", conversation)
 }
 ```
 
