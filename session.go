@@ -40,8 +40,5 @@ func (s *Session) isExpired() (bool, error) {
 	if err != nil {
 		return true, err
 	}
-	if expirationTime.Before(time.Now()) {
-		return true, nil
-	}
-	return false, nil
+	return expirationTime.Before(time.Now()), nil
 }
