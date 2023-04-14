@@ -30,7 +30,7 @@ type GoGPT interface {
 	CreateConversation(message, model string, onResponseCallback conversationResponseConsumer) error
 }
 
-func New(browserContextPath string, headless, debug bool, timeZoneOffset int) (GoGPT, error) {
+func New(browserContextPath string, headless, debug bool, timeZoneOffset int, timeout *float64) (GoGPT, error) {
 	var loadFromBrowserContext bool
 	s, err := os.Stat(browserContextPath)
 	if err != nil {
@@ -77,6 +77,7 @@ func New(browserContextPath string, headless, debug bool, timeZoneOffset int) (G
 		conversationHistory: newIdBasedSet[ConversationHistoryItem](100),
 		availableModels:     []string{},
 		timeZoneOffset:      timeZoneOffset,
+		timeout:             timeout,
 	}, nil
 }
 

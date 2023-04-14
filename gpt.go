@@ -26,6 +26,7 @@ type gpt struct {
 	conversationHistory *idBasedSet[ConversationHistoryItem]
 	availableModels     []string
 	timeZoneOffset      int
+	timeout             *float64
 }
 
 // getChallenge returns  a playwright.ElementHandle related to the challenge and an error if there's an error returned by navigate
@@ -34,7 +35,7 @@ func (g *gpt) getChallenge() (playwright.ElementHandle, error) {
 	if err != nil {
 		return nil, err
 	}
-	selector, err := g.page.WaitForSelector(challengeDivSelector)
+	selector, err := g.page.WaitForSelector(challengeDivSelector, playwright.PageWaitForSelectorOptions{Timeout: g.timeout})
 	if err != nil {
 		return nil, nil
 	}
@@ -67,7 +68,7 @@ func (g *gpt) navigate() error {
 
 // solveChallenge solves the challenge in the login screen
 func (g *gpt) solveChallenge(challengeElementHandle playwright.ElementHandle) error {
-	iFrameElementHandle, err := challengeElementHandle.WaitForSelector(iframeSelector)
+	iFrameElementHandle, err := challengeElementHandle.WaitForSelector(iframeSelector, playwright.ElementHandleWaitForSelectorOptions{Timeout: g.timeout})
 	if err != nil {
 		logger.Error("iframeSelector does not exists in challengeElementHandle")
 		return err
@@ -117,7 +118,7 @@ func (g *gpt) userNeedsToLogin() (bool, error) {
 			return true, err
 		}
 	}
-	_, err = g.page.WaitForSelector(loginPageTextSelector)
+	_, err = g.page.WaitForSelector(loginPageTextSelector, playwright.PageWaitForSelectorOptions{Timeout: g.timeout})
 	if err != nil {
 		// TODO: Verify if there's no other error -> service unavailable or already logged in
 		logger.Debug("Not on the login page. No need to login")
@@ -278,7 +279,7 @@ func (g *gpt) saveBrowserContexts() error {
 // getPopupDialog returns the playwright.ElementHandle related to the popupDialog selected by popupDialogSelector
 // if there's no pop-up dialog it returns nil
 func (g *gpt) getPopupDialog() playwright.ElementHandle {
-	elementHandle, err := g.page.WaitForSelector(popupDialogSelector)
+	elementHandle, err := g.page.WaitForSelector(popupDialogSelector, playwright.PageWaitForSelectorOptions{Timeout: g.timeout})
 	if err != nil {
 		logger.Debug("Popup selector does not exists")
 		return nil
@@ -304,10 +305,10 @@ func (g *gpt) passPopupDialog() error {
 	for popupDialogElementHandler != nil {
 		last := false
 		logger.Debug("Waiting for next button")
-		buttonHandle, err := popupDialogElementHandler.WaitForSelector(nextButtonSelector)
+		buttonHandle, err := popupDialogElementHandler.WaitForSelector(nextButtonSelector, playwright.ElementHandleWaitForSelectorOptions{Timeout: g.timeout})
 		if err != nil {
 			logger.Debug("Next button does not exists in popup. Waiting for done button")
-			buttonHandle, err = popupDialogElementHandler.WaitForSelector(doneButtonSelector)
+			buttonHandle, err = popupDialogElementHandler.WaitForSelector(doneButtonSelector, playwright.ElementHandleWaitForSelectorOptions{Timeout: g.timeout})
 			if err != nil {
 				logger.Error("Either next button or done button should appear. Something is probably wrong")
 				return err
