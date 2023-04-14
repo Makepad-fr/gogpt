@@ -28,7 +28,8 @@ import (
 	"log"
 )
 func main() {
-	gpt, err := gogpt.New("./gogpt.json", false, true, -120)
+	var timeout float64 = 1000
+	gpt, err := gogpt.New("./gogpt.json", false, true, -120, &timeout)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -56,7 +57,8 @@ import (
 	"log"
 )
 func main() {
-	gpt, err := gogpt.New("./gogpt.json", false, true, -120)
+	var timeout float64 = 1000
+	gpt, err := gogpt.New("./gogpt.json", false, true, -120, &timeout)
 	if err != nil {
 		log.Fatal(err)
 	}
