@@ -29,7 +29,14 @@ import (
 )
 func main() {
 	var timeout float64 = 1000
-	gpt, err := gogpt.New("./gogpt.json", false, true, -120, &timeout)
+	var debug bool = true
+	gpt, err := gogpt.New(gogpt.Options{
+		BrowserContextPath: "./gogpt.json",
+		Headless:           false,
+		TimeZoneOffset:     -120,
+		Debug:              &debug,
+		Timeout:            &timeout,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -57,8 +64,15 @@ import (
 	"log"
 )
 func main() {
-	var timeout float64 = 1000
-	gpt, err := gogpt.New("./gogpt.json", false, true, -120, &timeout)
+        var timeout float64 = 1000
+	var debug bool = true
+	gpt, err := gogpt.New(gogpt.Options{
+		BrowserContextPath: "./gogpt.json",
+		Headless:           false,
+		TimeZoneOffset:     -120,
+		Debug:              &debug,
+		Timeout:            &timeout,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
