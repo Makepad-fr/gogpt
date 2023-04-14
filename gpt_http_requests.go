@@ -191,7 +191,6 @@ func (g *gpt) sendMessageToNewConversation(message, model string, onResponse con
 	request.Header.Set("Sec-Fetch-Mode", "cors")
 	request.Header.Set("Sec-Fetch-Site", "same-site")
 	request.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.146 Safari/537.36")
-	logger.Debug("Request headers", zap.Any("headers", request.Header))
 
 	resp, err := g.httpClient.Do(request)
 	if err != nil {
